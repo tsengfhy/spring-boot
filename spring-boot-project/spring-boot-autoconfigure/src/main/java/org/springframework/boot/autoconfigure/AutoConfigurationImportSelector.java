@@ -118,15 +118,18 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 	 * @return the auto-configurations that should be imported
 	 */
 	protected AutoConfigurationEntry getAutoConfigurationEntry(AnnotationMetadata annotationMetadata) {
+		// SpringBoot.0.基于Spring中@Import的DeferredImportSelector，在@EnableAutoConfiguration中导入
 		if (!isEnabled(annotationMetadata)) {
 			return EMPTY_ENTRY;
 		}
+		// SpringBoot.1.获取所有AutoConfiguration，并过滤掉@EnableAutoConfiguration中排除的
 		AnnotationAttributes attributes = getAttributes(annotationMetadata);
 		List<String> configurations = getCandidateConfigurations(annotationMetadata, attributes);
 		configurations = removeDuplicates(configurations);
 		Set<String> exclusions = getExclusions(annotationMetadata, attributes);
 		checkExcludedClasses(configurations, exclusions);
 		configurations.removeAll(exclusions);
+		// SpringBoot.1.6.可以使用META-INF/spring.factories中配置的AutoConfigurationImportFilter再次做过滤
 		configurations = getConfigurationClassFilter().filter(configurations);
 		fireAutoConfigurationImportEvents(configurations, exclusions);
 		return new AutoConfigurationEntry(configurations, exclusions);
@@ -179,8 +182,10 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 	 * @return a list of candidate configurations
 	 */
 	protected List<String> getCandidateConfigurations(AnnotationMetadata metadata, AnnotationAttributes attributes) {
+		// SpringBoot.1.1.从META-INF/spring.factories中获取key=EnableAutoConfiguration的(Deprecated)
 		List<String> configurations = new ArrayList<>(
 				SpringFactoriesLoader.loadFactoryNames(getSpringFactoriesLoaderFactoryClass(), getBeanClassLoader()));
+		// SpringBoot.1.2.从META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports中获取，2.7最新实现
 		ImportCandidates.load(AutoConfiguration.class, getBeanClassLoader()).forEach(configurations::add);
 		Assert.notEmpty(configurations,
 				"No auto configuration classes found in META-INF/spring.factories nor in META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports. If you "
@@ -204,6 +209,7 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 				invalidExcludes.add(exclusion);
 			}
 		}
+		// SpringBoot.1.5.若排除的AutoConfiguration不存在将报错
 		if (!invalidExcludes.isEmpty()) {
 			handleInvalidExcludes(invalidExcludes);
 		}
@@ -233,8 +239,10 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 	 */
 	protected Set<String> getExclusions(AnnotationMetadata metadata, AnnotationAttributes attributes) {
 		Set<String> excluded = new LinkedHashSet<>();
+		// SpringBoot.1.3.获取@EnableAutoConfiguration中配置的排除AutoConfiguration
 		excluded.addAll(asList(attributes, "exclude"));
 		excluded.addAll(asList(attributes, "excludeName"));
+		// SpringBoot.1.4.获取环境变量spring.autoconfigure.exclude中配置的排除AutoConfiguration
 		excluded.addAll(getExcludeAutoConfigurationsProperty());
 		return excluded;
 	}

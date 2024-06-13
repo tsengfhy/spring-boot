@@ -312,6 +312,7 @@ public class SpringApplication {
 				new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), timeTakenToStartup);
 			}
 			listeners.started(context, timeTakenToStartup);
+			// SpringBoot.2.初始化完成后调用ApplicationRunner/CommandLineRunner
 			callRunners(context, applicationArguments);
 		}
 		catch (Throwable ex) {
